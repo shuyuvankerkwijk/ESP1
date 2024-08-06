@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "ws.h"
+// #include "ws.h"
 // #include "crane.h"
 // #include "oled.h"
 #include "bluepill_uart.h"
@@ -10,25 +10,83 @@
 // #include "driver/ledc.h"
 // #include "driver/ledc.h"
 
+// // DEFAULT HIGH: 20, 0, 39, 2? ( might just be rx rn ), 1 (might just be tx rn), rx, tx, 
+bool run = true;
+//21,47,48,0
+
+// 21 = front arm counterclockwise, 47 = front arm clockwise
+
+int angle = 0;
+
+void zencoding(){
+  angle++;
+}
+
 // BLUEPILL UART MODE
 void setup() {
   Serial.begin(115200);
-  // bluepillUartSetup();
-  // wsSetup();
-}
+  //bluepillUartSetup();
+  // These pins default high, so start by setting them low
+  pinMode(14, OUTPUT);
+  pinMode(20, OUTPUT);
+  pinMode(0, OUTPUT);
+  pinMode(39, OUTPUT);
+  digitalWrite(14, LOW);
+  digitalWrite(20, LOW);
+  digitalWrite(0, LOW);
+  digitalWrite(39, LOW);  
 
+  // wsSetup();
+
+  pinMode(40, INPUT);
+  attachInterrupt(digitalPinToInterrupt(40), zencoding, RISING);
+
+  pinMode(21, OUTPUT); // back arm counterclockwise
+  pinMode(47, OUTPUT); // back arm clockwise
+  pinMode(48, OUTPUT); // front arm clockwise
+  // pinMode(0, OUTPUT); // front arm counterclockwise
+
+  // analogWrite(21, 255);
+  // analogWrite(47, 255);
+  // analogWrite(48, 255);
+  // analogWrite(0, 255);
+
+  // pinMode(13, OUTPUT); // back arm down
+  // pinMode(12, OUTPUT); // back arm up
+
+  // pinMode(11, OUTPUT); // back arm backwards
+  // pinMode(10, OUTPUT); // back arm forwards
+
+  // pinMode(14, OUTPUT); // back arm vacuum?
+
+
+  // analogWrite(14, 255);
+
+  // delay(2000);
+
+  // analogWrite(14, 100);
+
+  // delay(5000);
+
+  // analogWrite(14, 0);
+
+}
+// int reps = 0;
 void loop() {
-  Serial.println("Looping");
-  delay(1000);
   // String msg = bluepillUartReceive();
-  // if(msg != ""){
-  //   // wsSend(String(msg));
-  //   Serial.println(String(msg));
-  // } else {
-  //   // wsSend("No message");
-  //   Serial.println("No message");
+  // if(msg != ""&&run){
+  //   wsSend(String(msg));
+  // } 
+  // delay(10);
+
+  Serial.println("Angle: " + String(angle));
+  // wsSend("Angle"+ String(angle));
+  // delay(5);
+  // }else{
+  //   analogWrite(47, 0);
+  //   wsSend("Done");
+  //   delay(50);
   // }
-  // delay(100);
 }
 
 // // TESTING CRANE R MODE

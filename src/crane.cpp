@@ -5,6 +5,8 @@
 #include "pinout.h"
 #include "ws.h"
 
+
+
 int CranePWMFreq = 100;  // PWM frequency in Hz 
 int CranePWMResolution = 8;  // PWM resolution in bits
 
@@ -16,7 +18,7 @@ int craneYChannelUpward = 4; // PWM channel (0-15)
 int craneYChannelDownward = 5; // PWM channel (0-15)
 
 float distPerClickR = 126/44; // Distance the rack moves in mm per click
-float degPerClickZ = 90/1; //TODO: measure
+float degPerClickZ = 360/48; //TODO: measure
 
 volatile int encoderPosZ = 0;
 volatile int directionZ = 0; // 0 is nothing, 1 is clockwise, -1 is counter-clockwise
@@ -27,12 +29,22 @@ volatile int directionR = 0; // 0 is nothing, 1 is forward, -1 is backward
 volatile int posY = -1; // -1 is up (retracted), 1 is down (extended)
 
 
-void handleZEncoder();
-void handleREncoder();
-void handleYExtendSwitch();
-void handleYRetractSwitch();
+//Front_ARM
 
-void craneSetupZAxis() {
+void handleZEncoderF();
+void handleREncoderF();
+void handleYExtendSwitchF();
+void handleYRetractSwitchF();
+
+
+void craneSetupF() {
+    craneSetupZAxisF();
+    craneSetupRAxisF();
+    craneSetupYAxisF();
+    wsSend("Done Crane setup");
+}
+
+void craneSetupZAxisF() {
     // CRANE Z MOTOR
     pinMode(ZMOTOR_FRONT_CW_PIN, OUTPUT);
     pinMode(ZMOTOR_FRONT_CCW_PIN, OUTPUT);
@@ -47,12 +59,11 @@ void craneSetupZAxis() {
 
     // ENCODER FOR Z MOTOR
     pinMode(ZMOTOR_FRONT_ENCODER_PIN, INPUT);
-    attachInterrupt(digitalPinToInterrupt(ZMOTOR_FRONT_ENCODER_PIN), handleZEncoder, CHANGE); // on both rising and falling edges
-
-    oledDisplay("Done Crane Z-Axis setup");
+    attachInterrupt(digitalPinToInterrupt(ZMOTOR_FRONT_ENCODER_PIN), handleZEncoderF, CHANGE); // on both rising and falling edges
+    wsSend("Done Crane Z-Axis setup");
 }
 
-void craneSetupRAxis() {
+void craneSetupRAxisF() {
     // CRANE R MOTOR
     pinMode(RMOTOR_FRONT_FORWARD_PIN, OUTPUT);
     pinMode(RMOTOR_FRONT_BACKWARD_PIN, OUTPUT);
@@ -67,12 +78,12 @@ void craneSetupRAxis() {
 
     // ENCODER FOR R MOTOR
     pinMode(RMOTOR_FRONT_ENCODER_PIN, INPUT);
-    attachInterrupt(digitalPinToInterrupt(RMOTOR_FRONT_ENCODER_PIN), handleREncoder, CHANGE); // on both rising and falling edges
-    oledDisplay("Done Crane R-Axis setup");
+    attachInterrupt(digitalPinToInterrupt(RMOTOR_FRONT_ENCODER_PIN), handleREncoderF, CHANGE); // on both rising and falling edges
+    wsSend("Done Crane R-Axis setup");
+    
 }
 
-
-void craneSetupYAxis() {
+void craneSetupYAxisF() {
     // CRANE Y MOTOR
     pinMode(YMOTOR_FRONT_UP_PIN, OUTPUT);
     pinMode(YMOTOR_FRONT_DOWN_PIN, OUTPUT);
@@ -87,13 +98,13 @@ void craneSetupYAxis() {
     // LIMIT SWITCHES FOR Y MOTOR
     pinMode(YMOTOR_FRONT_EXTEND_LIMIT_SWITCH_PIN, INPUT_PULLUP);
     pinMode(YMOTOR_FRONT_RETRACT_LIMIT_SWITCH_PIN, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(YMOTOR_FRONT_EXTEND_LIMIT_SWITCH_PIN), handleYExtendSwitch, FALLING); // on both rising and falling edges
-    attachInterrupt(digitalPinToInterrupt(YMOTOR_FRONT_RETRACT_LIMIT_SWITCH_PIN), handleYRetractSwitch, FALLING); // on both rising and falling edges
+    attachInterrupt(digitalPinToInterrupt(YMOTOR_FRONT_EXTEND_LIMIT_SWITCH_PIN), handleYExtendSwitchF, FALLING); // on both rising and falling edges
+    attachInterrupt(digitalPinToInterrupt(YMOTOR_FRONT_RETRACT_LIMIT_SWITCH_PIN), handleYRetractSwitchF, FALLING); // on both rising and falling edges
 
-    oledDisplay("Done Crane Y-Axis setup");
+    wsSend("Done Crane Y-Axis setup");
 }
 
-void handleZEncoder() {
+void handleZEncoderF() {
   // Check the direction of rotation 
     if (directionZ == -1) {
         encoderPosZ--; // counter-clockwise
@@ -104,7 +115,7 @@ void handleZEncoder() {
     }
 }
 
-void handleREncoder() {
+void handleREncoderF() {
     // Check the direction of rotation
     if (directionR == -1) {
         encoderPosR--; // backward
@@ -115,15 +126,15 @@ void handleREncoder() {
     }
 }
 
-void handleYExtendSwitch() {
+void handleYExtendSwitchF() {
   posY = 1;
 }
 
-void handleYRetractSwitch() {
+void handleYRetractSwitchF() {
   posY = -1;
 }
 
-bool craneMoveZ(int final_pos) {
+bool craneMoveZF(int final_pos) {
   // Rotate either clockwise or counterclockwise (given by sign of final_pos) to final_pos position (in clicks)
   if (final_pos > 0) { // clockwise
     if (encoderPosZ >= final_pos) { // reached position, stop crane
@@ -144,7 +155,7 @@ bool craneMoveZ(int final_pos) {
   }
 }
 
-bool craneMoveR(int final_pos) {
+bool craneMoveRF(int final_pos) {
   if (final_pos > 0) { // forward
     if (encoderPosR >= final_pos) {
       ledcWrite(craneRChannelForward, 0);
@@ -166,7 +177,7 @@ bool craneMoveR(int final_pos) {
   }
 }
 
-bool craneMoveY(int final_pos) {
+bool craneMoveYF(int final_pos) {
   if (final_pos == -1) { // Retract
     if (posY == -1) {
       ledcWrite(craneYChannelUpward, 0);

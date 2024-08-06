@@ -23,14 +23,14 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 void OnDataRecv(const uint8_t * mac, const uint8_t *data, int len);
 
 void espCommSetup() {
-    oledDisplay("Initializing ESP-NOW");
+    //oledDisplay("Initializing ESP-NOW");
 
     // Set device as a Wi-Fi Station (has already been done in wsSetup())
     WiFi.mode(WIFI_STA);
 
     // Init ESP-NOW
     if (esp_now_init() != ESP_OK) {
-        oledDisplay("Error initializing ESP-NOW");
+        // oledDisplay("Error initializing ESP-NOW");
         return;
     }
 
@@ -43,15 +43,15 @@ void espCommSetup() {
     esp1Info.encrypt = false;
 
     // Add peer
-    if (esp_now_add_peer(&esp1Info) != ESP_OK) {
-        oledDisplay("Failed to add ESP2");
-        return;
-    }
+    // if (esp_now_add_peer(&esp1Info) != ESP_OK) {
+    //     oledDisplay("Failed to add ESP2");
+    //     return;
+    //}
 
     // Register for a callback function that will be called when data is received
     esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
 
-    oledDisplay("ESP-NOW initialized!");
+    // oledDisplay("ESP-NOW initialized!");
 }
 
 // Callback when data is sent
@@ -63,10 +63,10 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 // Callback when data is received
 void OnDataRecv(const uint8_t * mac, const uint8_t *data, int len) {
   memcpy(&incomingData, data, sizeof(incomingData));
-  oledDisplay("ESP-NOW Bytes received:" + len);
-  oledAppendDisplay("Cooktop: " + String(incomingData.cooktop));
-  oledAppendDisplay("Station: " + String(incomingData.station));
-  oledAppendDisplay("Random Number: " + String(incomingData.randomNum));
+//   oledDisplay("ESP-NOW Bytes received:" + len);
+//   oledAppendDisplay("Cooktop: " + String(incomingData.cooktop));
+//   oledAppendDisplay("Station: " + String(incomingData.station));
+//   oledAppendDisplay("Random Number: " + String(incomingData.randomNum));
 }
 
 void espCommSend(bool cooktop, String station, int randomNum) {
@@ -76,8 +76,8 @@ void espCommSend(bool cooktop, String station, int randomNum) {
 
     esp_err_t result = esp_now_send(esp1Address, (uint8_t *) &myData, sizeof(myData));
     if (result == ESP_OK) {
-        oledDisplay("Sent with success");
+        // oledDisplay("Sent with success");
     } else {
-        oledDisplay("Error sending the data");
+        // oledDisplay("Error sending the data");
     }
 }
