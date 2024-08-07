@@ -1,34 +1,40 @@
 #include <Arduino.h>
 #include "vacuum.h"
 #include "main.h"
-#include "oled.h"
 #include "pinout.h"
 
-int vacuum_freq = 100;
+int vacuum_freq = 1000;
 int resolution = 8;
-int vacuumInChannel = 8;  // PWM channel for vacuum in
+int vacuumInChannelF = 6;  // PWM channel for vacuum in
+int vacuumInChannelB = 7;  // PWM channel for vacuum in
 
-void vacuumSetup() {
-    // Configure vacuum control pin as output
+void vacuumSetupF() {
     pinMode(VACUUM_FRONT_MOTOR_PIN, OUTPUT);
-
-    // Configure PWM channel
-    ledcSetup(vacuumInChannel, vacuum_freq, resolution);
-
-    // Attach PWM channel to the specified GPIO pin
-    ledcAttachPin(VACUUM_FRONT_MOTOR_PIN, vacuumInChannel);
-
-    // Initialize duty cycle to 0% (vacuum off)
-    ledcWrite(vacuumInChannel, 0);
-
-    oledDisplay("Vacuum setup");
+    ledcSetup(vacuumInChannelF, vacuum_freq, resolution);
+    ledcAttachPin(VACUUM_FRONT_MOTOR_PIN, vacuumInChannelF);
+    ledcWrite(vacuumInChannelF, 0);
 }
 
-void vacuumOn(int power) {
-    ledcWrite(vacuumInChannel, power);  // Set vacuum to int power
+void vacuumSetupB() {
+    pinMode(VACUUM_BACK_MOTOR_PIN, OUTPUT);
+    ledcSetup(vacuumInChannelB, vacuum_freq, resolution);
+    ledcAttachPin(VACUUM_FRONT_MOTOR_PIN, vacuumInChannelB);
+    ledcWrite(vacuumInChannelB, 0);
 }
 
-void vacuumOff() {
-    ledcWrite(vacuumInChannel, 0);  // Turn vacuum off
+void vacuumOnF(int power) {
+    ledcWrite(vacuumInChannelF, power);  // Set vacuum to int power
+}
+
+void vacuumOffF() {
+    ledcWrite(vacuumInChannelF, 0);  // Turn vacuum off
+}
+
+void vacuumOnB(int power) {
+    ledcWrite(vacuumInChannelB, power);  // Set vacuum to int power
+}
+
+void vacuumOffB() {
+    ledcWrite(vacuumInChannelB, 0);  // Turn vacuum off
 }
 

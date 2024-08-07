@@ -2,9 +2,11 @@
 #define VACUUM_H
 
 // functions
-void vacuumSetup();
-void vacuumOn(int power);
-void vacuumOff();
-
+void vacuumSetupF();
+void vacuumSetupB();
+void vacuumOnF(int power);
+void vacuumOnB(int power);
+void vacuumOffF();
+void vacuumOffB();
 
 #endif // VACUUM_H

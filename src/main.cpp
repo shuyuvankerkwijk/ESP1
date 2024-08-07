@@ -1,31 +1,74 @@
 #include <Arduino.h>
-// #include "ws.h"
-// #include "crane.h"
-// #include "oled.h"
+#include "ws.h"
+#include "crane.h"
 #include "bluepill_uart.h"
-// #include "esp_comm.h"
-// #include "cups.h"
-// #include "vacuum.h"
-// #include "pinout.h"
-// #include "driver/ledc.h"
-// #include "driver/ledc.h"
+#include "esp2_uart.h"
+#include "vacuum.h"
+#include "pinout.h"
+#include "driver/ledc.h"
+#include "driver/ledc.h"
 
-// // DEFAULT HIGH: 20, 0, 39, 2? ( might just be rx rn ), 1 (might just be tx rn), rx, tx, 
-bool run = true;
-//21,47,48,0
+// // bool run = true;
 
-// 21 = front arm counterclockwise, 47 = front arm clockwise
+// void setup() {
+//   Serial.begin(115200);
+//   pinMode(14, OUTPUT);
+//   pinMode(20, OUTPUT);
+//   pinMode(0, OUTPUT);
+//   pinMode(39, OUTPUT);
+//   digitalWrite(14, LOW);
+//   digitalWrite(20, LOW);
+//   digitalWrite(0, LOW);
+//   digitalWrite(39, LOW); 
 
-int angle = 0;
+//   // bluepillUartSetup();
+//   // wsSetup();
 
-void zencoding(){
-  angle++;
-}
+//   // craneSetupZAxisB();
+//   // craneSetDirectionZB(1); // set clockwise
 
-// BLUEPILL UART MODE
+//   // craneSetupRAxisB();
+//   // craneSetDirectionRB(1); // set extend
+
+//   craneSetupYAxisB();
+//   craneSetDirectionYB(1); // set extend
+
+//   Serial.println("Done setup");
+// }
+
+// bool done = false;
+
+// void loop() {
+//   // String msg = bluepillUartReceive();
+//   // if (msg != "" && run) {
+//   //   wsSend(msg);
+//   // }
+//   if (done) {
+//     Serial.println("Done moving ZB");
+//     delay(10000);
+//   } else {
+//     // done = craneMoveRB(20);
+//     done = craneMoveYB(1);
+//   }
+// }
+
+
+
+
+// TRY
+
+enum RobotState {
+  START,
+  DRIVE_TO_TOMATO,
+  PICKUP_TOMATO_ATTACK,
+  PICKUP_TOMATO_RETREAT,
+  DEPOSIT_TOMATO,
+  EXTEND_CUP
+};
+
+RobotState robot_state = START;
+
 void setup() {
-  Serial.begin(115200);
-  //bluepillUartSetup();
   // These pins default high, so start by setting them low
   pinMode(14, OUTPUT);
   pinMode(20, OUTPUT);
@@ -34,60 +77,326 @@ void setup() {
   digitalWrite(14, LOW);
   digitalWrite(20, LOW);
   digitalWrite(0, LOW);
-  digitalWrite(39, LOW);  
+  digitalWrite(39, LOW); 
 
+  // bluepillUartSetup();
+  // esp2UartSetup();
   // wsSetup();
+  // vacuumSetupF();
+  vacuumSetupB();
+  // craneSetupF();
+  craneSetupB();
 
-  pinMode(40, INPUT);
-  attachInterrupt(digitalPinToInterrupt(40), zencoding, RISING);
-
-  pinMode(21, OUTPUT); // back arm counterclockwise
-  pinMode(47, OUTPUT); // back arm clockwise
-  pinMode(48, OUTPUT); // front arm clockwise
-  // pinMode(0, OUTPUT); // front arm counterclockwise
-
-  // analogWrite(21, 255);
-  // analogWrite(47, 255);
-  // analogWrite(48, 255);
-  // analogWrite(0, 255);
-
-  // pinMode(13, OUTPUT); // back arm down
-  // pinMode(12, OUTPUT); // back arm up
-
-  // pinMode(11, OUTPUT); // back arm backwards
-  // pinMode(10, OUTPUT); // back arm forwards
-
-  // pinMode(14, OUTPUT); // back arm vacuum?
-
-
-  // analogWrite(14, 255);
-
-  // delay(2000);
-
-  // analogWrite(14, 100);
-
-  // delay(5000);
-
-  // analogWrite(14, 0);
-
+  // wsSend("Setup complete");
 }
-// int reps = 0;
+
 void loop() {
-  // String msg = bluepillUartReceive();
-  // if(msg != ""&&run){
-  //   wsSend(String(msg));
-  // } 
-  // delay(10);
+  bool doneZB = false;
+  bool doneRB = false;
+  bool doneYB = false;
 
-  Serial.println("Angle: " + String(angle));
-  // wsSend("Angle"+ String(angle));
-  // delay(5);
-  // }else{
-  //   analogWrite(47, 0);
-  //   wsSend("Done");
-  //   delay(50);
-  // }
+  switch (robot_state) {
+
+    case START:
+      if (true) {
+        robot_state = DRIVE_TO_TOMATO;
+        craneSetDirectionZB(1); // set clockwise
+        
+      }
+      Serial.println("Start");
+      break;
+
+    case DRIVE_TO_TOMATO:
+      doneZB = craneMoveZB(48); //set to 72 to move 270 degrees clockwise around z-axis (72 clicks of 3.25 degrees each), rn 180 deg
+
+      if (doneZB) {
+        robot_state = PICKUP_TOMATO_ATTACK;
+        craneSetDirectionRB(1); // set extend
+      }
+      Serial.println("Drive to tomato");
+      break;
+    
+    case PICKUP_TOMATO_ATTACK:
+      // delay(1000);
+      doneRB = craneMoveRB(5); // Move arm to the 70 (?) click position outwards
+      doneYB = craneMoveYB(1); // Extend arm down
+
+      if (doneRB && doneYB) {
+        vacuumOnB(200);
+        craneSetDirectionYB(-1); // set retract
+        craneSetDirectionRB(-1); // set retract
+        robot_state = PICKUP_TOMATO_RETREAT;
+      }
+      Serial.println("Pickup tomato attack");
+      break;
+    
+    case PICKUP_TOMATO_RETREAT:
+      doneRB = craneMoveRB(-20); // Move arm to the 25 (?) click position inwards
+      doneYB = craneMoveYB(-1); // Retract arm up
+      if (doneRB && doneYB) {
+        vacuumOffB();
+        robot_state = DEPOSIT_TOMATO;
+      }
+      Serial.println("Pickup tomato retreat");
+      break;
+
+    case DEPOSIT_TOMATO:
+      Serial.println("Deposit tomato");
+      delay(1000);
+      break;
+
+    default:
+      break;
+  }
 }
+
+
+
+
+
+
+
+
+
+// REAL
+
+
+// enum RobotState {
+//   WAITING_TO_START_COURSE,
+//   DRIVE_TO_TOMATO,
+//   PICKUP_TOMATO_ATTACK,
+//   PICKUP_TOMATO_RETREAT,
+//   DEPOSIT_TOMATO,
+//   DRIVE_TO_LETTUCE,
+//   PICKUP_LETTUCE_ATTACK,
+//   PICKUP_LETTUCE_RETREAT,
+//   DEPOSIT_LETTUCE,
+//   DRIVE_TO_PLATE,
+//   GRAB_PLATE,
+//   VACUUM_PLATE,
+//   DRIVE_TO_SERVING,
+//   DROP_PLATE,
+//   DROP_FOOD
+// };
+
+// enum BluepillState {
+//   WAITING,
+//   MOVING,
+//   DONE
+// };
+
+// RobotState robot_state = WAITING_TO_START_COURSE;
+// BluepillState bp_state = WAITING;
+
+// void setup() {
+//   // These pins default high, so start by setting them low
+//   pinMode(14, OUTPUT);
+//   pinMode(20, OUTPUT);
+//   pinMode(0, OUTPUT);
+//   pinMode(39, OUTPUT);
+//   digitalWrite(14, LOW);
+//   digitalWrite(20, LOW);
+//   digitalWrite(0, LOW);
+//   digitalWrite(39, LOW); 
+
+//   bluepillUartSetup();
+//   esp2UartSetup();
+//   wsSetup();
+//   vacuumSetupF();
+//   vacuumSetupB();
+//   craneSetupF();
+//   craneSetupB();
+
+//   wsSend("Setup complete");
+// }
+
+// void loop() {
+//   bool doneZF = false;
+//   bool doneRF = false;
+//   bool doneYF = false;
+
+//   bool doneZB = false;
+//   bool doneRB = false;
+//   bool doneYB = false;
+
+//   switch (robot_state) {
+//     case WAITING_TO_START_COURSE:
+//       if (digitalRead(START_SWITCH_PIN)) {
+//         robot_state = DRIVE_TO_TOMATO;
+//       }
+//       break;
+
+//     case DRIVE_TO_TOMATO:
+//       if (bp_state == WAITING) {
+//         bluepillUartSend("Cheese");
+//         bp_state = MOVING;
+//       }
+
+//       doneZB = craneMoveZB(72); // move 270 degrees clockwise around z-axis (72 clicks of 3.25 degrees each)
+
+//       if (doneZB && doneRB && bp_state == DONE) {
+//         bp_state = WAITING;
+//         robot_state = PICKUP_TOMATO_ATTACK;
+//       }
+//       break;
+    
+//     case PICKUP_TOMATO_ATTACK:
+//       doneRB = craneMoveRB(70); // Move arm to the 70 (?) click position outwards
+//       doneYB = craneMoveYB(1); // Extend arm down
+
+//       if (doneRB && doneYB) {
+//         vacuumOnB(128);
+//         robot_state = PICKUP_TOMATO_RETREAT;
+//       }
+//       break;
+  
+//     case PICKUP_TOMATO_RETREAT:
+//       doneRB = craneMoveRB(50); // Move arm to the 50 (?) click position outwards
+//       doneYB = craneMoveYB(-1); // Retract arm up
+//       if (doneRB && doneYB) {
+//         robot_state = DEPOSIT_TOMATO;
+//       }
+//       break;
+    
+//     case DEPOSIT_TOMATO:
+//       doneZB = craneMoveZB(-20); // Move arm to the -25 (?) click position around z-axis
+//       doneRB = craneMoveRB(-20); // Move arm to the 20 (?) click position inwards
+//       if (doneZB && doneRB) {
+//         vacuumOffB();
+//         robot_state = DRIVE_TO_LETTUCE;
+//       }
+//       break;
+    
+//     case DRIVE_TO_LETTUCE:
+//       if (bp_state == WAITING) {
+//         bluepillUartSend("Lettuce");
+//         bp_state = MOVING;
+//       }
+//       // 
+//       break;
+    
+//     case PICKUP_LETTUCE_ATTACK:
+//       // 
+//       break;
+
+//     case PICKUP_LETTUCE_RETREAT:
+//       // 
+//       break;
+    
+//     case DEPOSIT_LETTUCE:
+//       // 
+//       break;
+      
+//     case DRIVE_TO_PLATE:
+//       //
+//       break;
+    
+//     case GRAB_PLATE:
+//       //
+//       break;
+    
+//     case VACUUM_PLATE:
+//       //
+//       break;
+    
+//     case DRIVE_TO_SERVING:
+//       //
+//       break;
+
+//     case DROP_PLATE:
+//       //
+//       break;
+
+//     case DROP_FOOD:
+//       //
+//       break;
+    
+//     default:
+//       break;
+//   }
+
+//   String msg = bluepillUartReceive();
+//   if(msg == "Done" && bp_state == MOVING){
+//     bp_state = DONE;
+//   } 
+
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // // // DEFAULT HIGH: 20, 0, 39, 2 (rx), 1 (tx), rx, tx, 
+// bool run = true;
+
+// // int angle = 0;
+
+// // void zencoding(){
+// //   angle++;
+// // }
+
+// // BLUEPILL UART MODE
+// void setup() {
+//   // These pins default high, so start by setting them low
+//   pinMode(14, OUTPUT);
+//   pinMode(20, OUTPUT);
+//   pinMode(0, OUTPUT);
+//   pinMode(39, OUTPUT);
+//   digitalWrite(14, LOW);
+//   digitalWrite(20, LOW);
+//   digitalWrite(0, LOW);
+//   digitalWrite(39, LOW);  
+
+//   bluepillUartSetup();
+//   wsSetup();
+
+//   Serial.begin(115200);
+// }
+
+// // int reps = 0;
+// void loop() {
+//   String msg = bluepillUartReceive();
+//   if(msg != ""&&run){
+//     wsSend(String(msg));
+//   } 
+//   // delay(10);
+
+//   // Serial.println("Angle: " + String(angle));
+//   // wsSend("Angle"+ String(angle));
+//   // delay(5);
+//   // }else{
+//   //   analogWrite(47, 0);
+//   //   wsSend("Done");
+//   //   delay(50);
+//   // }
+// }
 
 // // TESTING CRANE R MODE
 // void setup() {
@@ -124,116 +433,6 @@ void loop() {
 //     }
 //   }
 // }
-
-
-// enum RobotState {
-//   WAITING_TO_START_COURSE,
-//   DRIVE_TO_CHEESE,
-//   PICKUP_CHEESE_ATTACK,
-//   PICKUP_CHEESE_RETREAT,
-//   DEPOSIT_CHEESE,
-//   DRIVE_TO_PLATE,
-//   GRAB_PLATE,
-//   VACUUM_PLATE,
-//   DRIVE_TO_SERVING,
-//   DROP_PLATE,
-//   DROP_CHEESE
-// };
-
-// enum BluepillState {
-//   WAITING,
-//   MOVING,
-//   DONE
-// };
-
-// RobotState robot_state = WAITING_TO_START_COURSE;
-// BluepillState bp_state = WAITING;
-
-// void setup() {
-//   Serial.begin(9600);
-//   oledSetup();
-//   bluepillUartSetup();
-//   wsSetup();
-//   vacuumSetup();
-//   craneSetupRAxis();
-//   craneSetupYAxis();
-//   craneSetupZAxis();
-
-//   Serial.println("Done setup");
-// }
-
-// void loop() {
-//   bool doneZ = false;
-//   bool doneR = false;
-//   bool doneY = false;
-
-//   switch (robot_state) {
-//     case WAITING_TO_START_COURSE:
-//       if (digitalRead(START_SWITCH_PIN)) {
-//         robot_state = DRIVE_TO_CHEESE;
-//       }
-//       break;
-
-//     case DRIVE_TO_CHEESE:
-//       if (bp_state == WAITING) {
-//         bluepillUartSend("Cheese");
-//         bp_state = MOVING;
-//       }
-//       doneZ = craneMoveZ(25); // Move arm to the 25 (?) click position around z-axis
-//       doneR = craneMoveR(50); // Move arm to the 50 (?) click position outwards
-//       if (doneZ && doneR && bp_state == DONE) {
-//         bp_state = WAITING;
-//         robot_state = PICKUP_CHEESE_ATTACK;
-//       }
-//       break;
-    
-//     case PICKUP_CHEESE_ATTACK:
-//       doneR = craneMoveR(70); // Move arm to the 70 (?) click position outwards
-//       doneY = craneMoveY(1); // Extend arm down
-//       if (doneR && doneY) {
-//         vacuumOn(128);
-//         robot_state = PICKUP_CHEESE_RETREAT;
-//       }
-//       break;
-  
-//     case PICKUP_CHEESE_RETREAT:
-//       doneR = craneMoveR(50); // Move arm to the 50 (?) click position outwards
-//       doneY = craneMoveY(-1); // Retract arm up
-//       if (doneR && doneY) {
-//         robot_state = DEPOSIT_CHEESE;
-//       }
-//       break;
-    
-//     case DEPOSIT_CHEESE:
-//       doneZ = craneMoveZ(-20); // Move arm to the -25 (?) click position around z-axis
-//       doneR = craneMoveR(-20); // Move arm to the 20 (?) click position inwards
-//       if (doneZ && doneR) {
-//         vacuumOff();
-//         robot_state = DRIVE_TO_PLATE;
-//       }
-//       break;
-    
-//     case DRIVE_TO_PLATE:
-//       //
-//       break;
-    
-//     case GRAB_PLATE:
-//       //
-//       break;
-    
-//     case VACUUM_PLATE:
-//       //
-//       break;
-    
-//     case DRIVE_TO_SERVING:
-//       //
-//       break;
-
-//     default:
-//       break;
-//   }
-// }
-
 
 
 

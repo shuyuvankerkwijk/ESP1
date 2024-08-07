@@ -3,7 +3,7 @@
 #include "pinout.h"
 
 void bluepillUartSetup() {
-    Serial1.begin(9600, SERIAL_8N1, 44, 43);
+    Serial1.begin(9600, SERIAL_8N1, UART_BLUEPILL_RX_PIN, UART_BLUEPILL_TX_PIN);
 }
 
 void bluepillUartSend(String message) {

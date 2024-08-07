@@ -10,9 +10,13 @@ extern int START_SWITCH_PIN;
 extern int OLED_SDA_PIN;
 extern int OLED_SCL_PIN;
 
-// UART
+// BLUEPILL UART
 extern int UART_BLUEPILL_TX_PIN; 
 extern int UART_BLUEPILL_RX_PIN; 
+
+// ESP2 UART
+extern int UART_ESP2_RX_PIN;
+extern int UART_ESP2_TX_PIN;
 
 // Vacuum
 extern int VACUUM_FRONT_MOTOR_PIN;
@@ -33,11 +37,13 @@ extern int ZMOTOR_BACK_RETRACT_LIMIT_SWITCH_PIN;
 extern int RMOTOR_FRONT_FORWARD_PIN;
 extern int RMOTOR_FRONT_BACKWARD_PIN;
 extern int RMOTOR_FRONT_ENCODER_PIN;
+extern int RMOTOR_FRONT_ENCODER_PIN_B;
 extern int RMOTOR_FRONT_RETRACT_LIMIT_SWITCH_PIN;
 
 extern int RMOTOR_BACK_FORWARD_PIN;
 extern int RMOTOR_BACK_BACKWARD_PIN;
 extern int RMOTOR_BACK_ENCODER_PIN;
+extern int RMOTOR_BACK_ENCODER_PIN_B;
 extern int RMOTOR_BACK_RETRACT_LIMIT_SWITCH_PIN;
 
 // "Y-axis" translation for both arms (called 'YMOTOR' just to differentatiate from the z-axis rotation)

@@ -1,33 +1,30 @@
 #ifndef CRANE_H
 #define CRANE_H
 
-
-class Crane_position{
-    int Z_angle;//deg
-    int R_position;//mm
-    bool down;
-    
-    Crane_position();
-};
-
-class Crane_movement{
-    bool done;
-
-    
-
-    Crane_movement();
-
-    void execute();
-};
 // functions
-void craneSetupZAxisF();
-void craneSetupRAxisF();
-void craneSetupYAxisF();
+void craneSetupF();
+void craneSetupB();
+void craneSetupZAxisB();
+void craneSetupRAxisB();
+void craneSetupYAxisB();
 
-bool craneMoveZF(int deg);
-bool craneMoveRF(int mm);
-bool craneMoveYF(int mm);
 
-void craneArmTest();
+void craneSetDirectionZF(int dir);
+bool craneMoveZF(int final_pos);
+
+void craneSetDirectionRF(int dir);
+bool craneMoveRF(int final_pos);
+
+void craneSetDirectionYF(int dir);
+bool craneMoveYF(int final_pos);
+
+void craneSetDirectionZB(int dir);
+bool craneMoveZB(int final_pos);
+
+void craneSetDirectionRB(int dir);
+bool craneMoveRB(int final_pos);
+
+void craneSetDirectionYB(int dir);
+bool craneMoveYB(int final_pos);
 
 #endif // CRANE_H
